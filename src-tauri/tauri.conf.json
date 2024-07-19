@@ -1,0 +1,81 @@
+{
+  "build": {
+    "beforeDevCommand": "yarn dev",
+    "beforeBuildCommand": "yarn build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "柴特千问",
+    "version": "0.0.1"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "window": {
+        "all": true
+      },
+      "path": {
+        "all": true
+      }
+    },
+    "windows": [
+      {
+        "title": "柴特千问",
+        "width": 800,
+        "height": 600,
+        "decorations": false,
+        "resizable": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "bundle": {
+      "shortDescription": "柴特千问",
+      "windows": {
+        "wix": {
+          "language": "zh-CN",
+          "bannerPath": "icons/banner.png",
+          "dialogImagePath": "icons/back.png"
+        },
+        "nsis": {
+          "installerIcon": "icons/icon.ico",
+          "headerImage": "icons/header.bmp",
+          "sidebarImage": "icons/sidebar.bmp",
+          "languages": [
+            "SimpChinese"
+          ]
+        }
+      },
+      "active": true,
+      "targets": "all",
+      "identifier": "cn.ztion.converge.client",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ]
+    },
+    "systemTray": {
+      "iconPath": "icons/icon.png"
+    },
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://akita.ztion.cn/akita/update.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE0MDk5MjU1MDY3NzE2M0MKUldROEZuY0dWWklKcEFHMHJ0aTJYN2RxRlZvS1pIaFJST0IyY1UzT0hvZzlucnpvc2QwNm9LREoK",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}
