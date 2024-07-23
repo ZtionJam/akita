@@ -1,4 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+mod domain;
+mod action;
+mod utils;
+mod qwen;
+
 use tauri::Manager;
 use window_shadows::set_shadow;
 
@@ -12,7 +17,7 @@ fn main() {
             set_shadow(&main_window, true).unwrap();
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![action::send_ques])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

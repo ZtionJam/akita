@@ -10,6 +10,7 @@
                     <v-md-preview :text="msg.content"></v-md-preview>
                 </div>
             </div>
+            <a-empty class="empty" v-if="data.msgList.length===0" description="没有消息记录~"/>
         </div>
 
         <div class="input_area">
@@ -22,6 +23,7 @@
 
 
             <a-textarea :disabled="data.sending" class="input_box" v-model:value="data.inputText"
+                        @keyup.enter="quickSend"
                         placeholder="输入你的问题,使用Shift+Enter快速发送"
                         :auto-size="{ minRows: 2, maxRows: 5 }"/>
 
@@ -32,67 +34,100 @@
                     <SendOutlined/>
                 </template>
             </a-button>
-
-
+        </div>
+        <div class="left_panel">
+            <div class="lp_box">
+                <div class="menu_name">模型选择</div>
+                <a-select class="model_select">
+                    <a-select-option value="jack">Jack</a-select-option>
+                </a-select>
+                <div class="menu_name">记录</div>
+                <div class="record_box">
+                    <div v-for="record in data.recordList" @click="load_record(record)">{{ record.title }}</div>
+                </div>
+            </div>
+            <div class="lp_arrow">👉</div>
         </div>
     </div>
 </template>
 <script setup>
-import {ref, nextTick} from 'vue';
+import {ref, nextTick, onMounted} from 'vue';
 import {UploadOutlined, SendOutlined} from '@ant-design/icons-vue';
+import {invoke} from "@tauri-apps/api/tauri";
+import {listen} from "@tauri-apps/api/event";
 
 let data = ref({
     sending: false,
-    msgList: [
+    msgList: [],
+    recordList: [
         {
-            role: "user",
-            avatar: "https://res.ztion.cn/imgs/cat.png",
-            content: `你知道Sakura吗`,
+            title: "xxxxxxxxx",
         },
         {
-            role: "AI",
-            avatar: "https://res.ztion.cn/imgs/cat.png",
-            content: `### Sakura
-用于生成美观的单个接口图片和或文本，识别Swagger注解
-### 使用方法
-在Controller方法上面右键，点击查看接口
-### 效果`,
-        }, {
-            role: "AI",
-            avatar: "https://res.ztion.cn/imgs/cat.png",
-            content: `### Sakura
-用于生成美观的单个接口图片和或文本，识别Swagger注解
-### 使用方法
-在Controller方法上面右键，点击查看接口
-### 效果`,
-        }, {
-            role: "AI",
-            avatar: "https://res.ztion.cn/imgs/cat.png",
-            content: `### Sakura
-用于生成美观的单个接口图片和或文本，识别Swagger注解
-### 使用方法
-在Controller方法上面右键，点击查看接口
-### 效果`,
-        }, {
-            role: "AI",
-            avatar: "https://res.ztion.cn/imgs/cat.png",
-            content: `### Sakura
-用于生成美观的单个接口图片和或文本，识别Swagger注解
-### 使用方法
-在Controller方法上面右键，点击查看接口
-### 效果`,
+            title: "xxxxxxxxx",
         },
+        {
+            title: "xxxxxxxxx",
+        },
+        {
+            title: "xxxxxxxxx",
+        }
     ],
     inputText: ""
 });
+onMounted(() => {
+    toBottom();
+});
 const sendMsg = () => {
+    const ques_id = new Date().getTime();
+    let ques_content = data.value.inputText;
     data.value.msgList.push({
+        id: ques_id,
         role: "user",
         avatar: "https://res.ztion.cn/imgs/cat.png",
-        content: data.value.inputText,
+        content: ques_content,
+    });
+
+    invoke("send_ques", {
+        req: {
+            ans_id: ques_id + 1,
+            model_name: "qwen2-1.5b-instruct",
+            msg_history: data.value.msgList
+        }
+    })
+
+    data.value.msgList.push({
+        id: ques_id + 1,
+        role: "assistant",
+        avatar: "https://res.ztion.cn/imgs/cat.png",
+        content: "",
     });
     data.value.inputText = "";
     toBottom();
+}
+const load_record = (record) => {
+
+}
+
+const quickSend = e => {
+    if (e.shiftKey === true && e.key === "Enter") {
+        sendMsg();
+    }
+};
+
+listen("msg_chunk", e => {
+    let msg = e.payload;
+    console.log("收到消息片段", msg);
+    merge_msg_chunk(msg.msg_id, msg.chunk_content);
+});
+
+const merge_msg_chunk = (msg_id, content) => {
+    data.value.msgList.forEach(msg => {
+        if (msg.id === msg_id) {
+            msg.content += content;
+            toBottom();
+        }
+    })
 }
 
 const toggleDis = (state) => {
@@ -101,9 +136,7 @@ const toggleDis = (state) => {
 
 const toBottom = () => {
     nextTick(() => {
-        let container = document.getElementById("msg_area");
-        console.log(container)
-        container.scrollTop = container.scrollHeight;
+        window.scrollTo(0, document.documentElement.scrollHeight);
     });
 };
 </script>
@@ -114,12 +147,108 @@ const toBottom = () => {
     background: #f7f8fc;
     overflow: hidden;
 
+
+    .left_panel {
+        width: 250px;
+        height: 450px;
+        position: fixed;
+        top: 8%;
+        left: 0;
+        z-index: 100;
+        transition: all 200ms ease-in;
+        display: flex;
+        align-items: center;
+
+
+        &:hover {
+            left: 0;
+            transition: all 200ms ease-out;
+        }
+
+        .lp_box {
+            width: 220px;
+            height: 100%;
+            background: rgba(255, 255, 255, 1);
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            .menu_name {
+                width: 100%;
+                text-align: center;
+                font-size: 12px;
+                margin-top: 10px;
+            }
+
+            .model_select {
+                width: 180px;
+                margin-top: 15px;
+
+                > div {
+                    color: blue;
+                }
+            }
+
+            .record_box {
+                margin-top: 15px;
+                width: 200px;
+                height: 500px;
+                border: 1px solid #7873f1;
+                border-radius: 10px;
+                overflow-y: scroll;
+                padding: 5px;
+
+                .choose {
+                    background: #7873f1;
+                }
+
+                > div {
+                    margin-top: 5px;
+                    width: 100%;
+                    height: 40px;
+                    line-height: 40px;
+                    text-align: center;
+                    border: 2px solid #7873f1;
+                    border-radius: 5px;
+
+                    &:hover {
+                        cursor: pointer;
+                        background: #7873f1;
+                    }
+                }
+            }
+        }
+
+        .lp_arrow {
+            width: 30px;
+            height: 80px;
+            border-right: 1px solid #ccc;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 1);
+        }
+    }
+
     .msg_area {
         width: 100%;
-        height: 100%;
+        min-height: 500px;
         padding-bottom: 100px;
         overflow: hidden;
 
+        .empty {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
 
         .user_msg {
             flex-direction: row-reverse;
