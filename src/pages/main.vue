@@ -38,12 +38,12 @@
         <div class="left_panel">
             <div class="lp_box">
                 <div class="menu_name">模型选择</div>
-                <a-select class="model_select">
-                    <a-select-option value="jack">Jack</a-select-option>
+                <a-select class="model_select" v-model:value="data.nowModelName">
+                    <a-select-option v-for="model in data.modelList" :value="model.modelName">{{model.name}}</a-select-option>
                 </a-select>
                 <div class="menu_name">记录</div>
                 <div class="record_box">
-                    <div v-for="record in data.recordList" @click="load_record(record)">{{ record.title }}</div>
+                    <div v-for="record in data.recordList" :class="{choose:data.nowRecordId===record.id}"  @click="load_record(record)">{{ record.title }}</div>
                 </div>
             </div>
             <div class="lp_arrow">👉</div>
@@ -55,29 +55,52 @@ import {ref, nextTick, onMounted} from 'vue';
 import {UploadOutlined, SendOutlined} from '@ant-design/icons-vue';
 import {invoke} from "@tauri-apps/api/tauri";
 import {listen} from "@tauri-apps/api/event";
+import { notification,message  } from 'ant-design-vue';
 
 let data = ref({
     sending: false,
     msgList: [],
     recordList: [
         {
-            title: "xxxxxxxxx",
+            id:"1",
+            title: "默认会话",
         },
-        {
-            title: "xxxxxxxxx",
-        },
-        {
-            title: "xxxxxxxxx",
-        },
-        {
-            title: "xxxxxxxxx",
-        }
+      {
+        id:"2",
+        title: "特殊会话",
+      }
     ],
-    inputText: ""
+    modelList:[
+      {
+        name: "千问2 1.5B",
+        modelName: "qwen2-1.5b-instruct"
+      },
+      {
+        name: "千问2 72B",
+        modelName: "qwen2-72b-instruct"
+      }
+    ],
+    inputText: "",
+    nowRecordId:'1',
+    nowModelName:'qwen2-1.5b-instruct',
 });
 onMounted(() => {
+    //加载会话
+    localStorage.setItem("time",new Date().getTime().toString());
+    let state=localStorage.getItem("state");
+    if(state==null){
+      updateState()
+    }else{
+      data.value=JSON.parse(state);
+    }
+
+
+
     toBottom();
 });
+const updateState=()=>{
+  localStorage.setItem("state",JSON.stringify(data.value));
+}
 const sendMsg = () => {
     const ques_id = new Date().getTime();
     let ques_content = data.value.inputText;
@@ -91,7 +114,7 @@ const sendMsg = () => {
     invoke("send_ques", {
         req: {
             ans_id: ques_id + 1,
-            model_name: "qwen2-1.5b-instruct",
+            model_name: data.value.nowModelName,
             msg_history: data.value.msgList
         }
     })
@@ -105,8 +128,20 @@ const sendMsg = () => {
     data.value.inputText = "";
     toBottom();
 }
-const load_record = (record) => {
 
+const load_record = (record) => {
+  data.value.nowRecordId=record.id
+  let msgRecord=localStorage.getItem("record:"+record.id);
+  if(msgRecord!=null){
+    let msgList=JSON.parse(msgRecord);
+    if(msgList.length>0){
+      data.value.msgList=msgList;
+    }
+  }else{
+    data.value.msgList=[]
+  }
+  toBottom();
+  message.success('已成功加载历史消息',1);
 }
 
 const quickSend = e => {
@@ -119,6 +154,10 @@ listen("msg_chunk", e => {
     let msg = e.payload;
     console.log("收到消息片段", msg);
     merge_msg_chunk(msg.msg_id, msg.chunk_content);
+    if(msg.over){
+      localStorage.setItem("record:"+data.value.nowRecordId,JSON.stringify(data.value.msgList));
+      updateState()
+    }
 });
 
 const merge_msg_chunk = (msg_id, content) => {
@@ -153,11 +192,12 @@ const toBottom = () => {
         height: 450px;
         position: fixed;
         top: 8%;
-        left: 0;
+        left: -220px;
         z-index: 100;
         transition: all 200ms ease-in;
         display: flex;
         align-items: center;
+        user-select: none;
 
 
         &:hover {
@@ -233,7 +273,8 @@ const toBottom = () => {
             border-bottom-right-radius: 5px;
             display: flex;
             align-items: center;
-            background: rgba(255, 255, 255, 1);
+            background: rgba(255, 255, 244, 1);
+            opacity: 0.8;
         }
     }
 
