@@ -39,67 +39,96 @@
             <div class="lp_box">
                 <div class="menu_name">模型选择</div>
                 <a-select class="model_select" v-model:value="data.nowModelName">
-                    <a-select-option v-for="model in data.modelList" :value="model.modelName">{{model.name}}</a-select-option>
+                    <a-select-option v-for="model in data.modelList" :value="model.modelName">{{ model.name }}
+
+                    </a-select-option>
                 </a-select>
                 <div class="menu_name">记录</div>
                 <div class="record_box">
-                    <div v-for="record in data.recordList" :class="{choose:data.nowRecordId===record.id}"  @click="load_record(record)">{{ record.title }}</div>
+                    <div v-for="record in data.recordList" :class="{choose:data.nowRecordId===record.id}"
+                         @click="load_record(record)">
+                        <div>{{ record.title }}</div>
+                        <div><img src="@/assets/icon/close.png" alt/></div>
+
+                    </div>
+                </div>
+                <div class="lp_btn_box">
+                    <a-button type="primary" @click="toggleAdd(true)" size="middle">新增会话</a-button>
+                    <a-button type="primary" size="middle">更多设置</a-button>
                 </div>
             </div>
             <div class="lp_arrow">👉</div>
         </div>
+        <addChat v-if="data.addChat" @save="saveNewChat" @toggle="toggleAdd"/>
     </div>
 </template>
 <script setup>
-import {ref, nextTick, onMounted} from 'vue';
-import {UploadOutlined, SendOutlined} from '@ant-design/icons-vue';
+import {nextTick, onMounted, ref} from 'vue';
+import {SendOutlined, UploadOutlined} from '@ant-design/icons-vue';
 import {invoke} from "@tauri-apps/api/tauri";
 import {listen} from "@tauri-apps/api/event";
-import { notification,message  } from 'ant-design-vue';
+import {message} from 'ant-design-vue';
+import AddChat from "../components/addChat.vue";
 
 let data = ref({
     sending: false,
     msgList: [],
     recordList: [
         {
-            id:"1",
+            id: "1",
             title: "默认会话",
         },
-      {
-        id:"2",
-        title: "特殊会话",
-      }
+        {
+            id: "2",
+            title: "特殊会话",
+        }
     ],
-    modelList:[
-      {
-        name: "千问2 1.5B",
-        modelName: "qwen2-1.5b-instruct"
-      },
-      {
-        name: "千问2 72B",
-        modelName: "qwen2-72b-instruct"
-      }
+    modelList: [
+        {
+            name: "千问2 1.5B",
+            modelName: "qwen2-1.5b-instruct"
+        },
+        {
+            name: "千问2 72B",
+            modelName: "qwen2-72b-instruct"
+        }
     ],
     inputText: "",
-    nowRecordId:'1',
-    nowModelName:'qwen2-1.5b-instruct',
+    nowRecordId: '1',
+    nowModelName: 'qwen2-1.5b-instruct',
+    addChat: false
 });
 onMounted(() => {
     //加载会话
-    localStorage.setItem("time",new Date().getTime().toString());
-    let state=localStorage.getItem("state");
-    if(state==null){
-      updateState()
-    }else{
-      data.value=JSON.parse(state);
+    localStorage.setItem("time", new Date().getTime().toString());
+    let state = localStorage.getItem("state");
+    if (state == null) {
+        updateState()
+    } else {
+        data.value = JSON.parse(state);
     }
-
 
 
     toBottom();
 });
-const updateState=()=>{
-  localStorage.setItem("state",JSON.stringify(data.value));
+const updateState = () => {
+    localStorage.setItem("state", JSON.stringify(data.value));
+}
+const toggleAdd = (state) => {
+    data.value.addChat = state
+}
+const saveNewChat = (chat) => {
+    console.log(data.value)
+    let record = {
+        id: new Date().getTime(),
+        title: chat.name,
+        prompt: chat.prompt
+    };
+    data.value.recordList.push(record)
+    load_record(record);
+    data.value.addChat = false;
+
+    updateState();
 }
 const sendMsg = () => {
     const ques_id = new Date().getTime();
@@ -130,18 +159,18 @@ const sendMsg = () => {
 }
 
 const load_record = (record) => {
-  data.value.nowRecordId=record.id
-  let msgRecord=localStorage.getItem("record:"+record.id);
-  if(msgRecord!=null){
-    let msgList=JSON.parse(msgRecord);
-    if(msgList.length>0){
-      data.value.msgList=msgList;
+    data.value.nowRecordId = record.id
+    let msgRecord = localStorage.getItem("record:" + record.id);
+    if (msgRecord != null) {
+        let msgList = JSON.parse(msgRecord);
+        if (msgList.length > 0) {
+            data.value.msgList = msgList;
+        }
+    } else {
+        data.value.msgList = []
     }
-  }else{
-    data.value.msgList=[]
-  }
-  toBottom();
-  message.success('已成功加载历史消息',1);
+    toBottom();
+    message.success('已成功加载历史消息', 1);
 }
 
 const quickSend = e => {
@@ -152,11 +181,10 @@ const quickSend = e => {
 
 listen("msg_chunk", e => {
     let msg = e.payload;
-    console.log("收到消息片段", msg);
     merge_msg_chunk(msg.msg_id, msg.chunk_content);
-    if(msg.over){
-      localStorage.setItem("record:"+data.value.nowRecordId,JSON.stringify(data.value.msgList));
-      updateState()
+    if (msg.over) {
+        localStorage.setItem("record:" + data.value.nowRecordId, JSON.stringify(data.value.msgList));
+        updateState()
     }
 });
 
@@ -192,7 +220,7 @@ const toBottom = () => {
         height: 450px;
         position: fixed;
         top: 8%;
-        left: -220px;
+        //left: -220px;
         z-index: 100;
         transition: all 200ms ease-in;
         display: flex;
@@ -236,7 +264,7 @@ const toBottom = () => {
             .record_box {
                 margin-top: 15px;
                 width: 200px;
-                height: 500px;
+                height: 300px;
                 border: 1px solid #7873f1;
                 border-radius: 10px;
                 overflow-y: scroll;
@@ -254,12 +282,47 @@ const toBottom = () => {
                     text-align: center;
                     border: 2px solid #7873f1;
                     border-radius: 5px;
+                    display: flex;
+
+                    &:hover img {
+                        visibility: visible;
+                    }
+
+                    > div:nth-child(1) {
+                        width: 100%;
+                        height: 40px;
+                        line-height: 40px;
+                        text-indent: 20px;
+                    }
+
+                    > div:nth-child(2) {
+                        width: 20%;
+                        height: 40px;
+                        align-items: center;
+                        justify-content: center;
+                        display: flex;
+
+                        img {
+                            width: 20px;
+                            visibility: hidden;
+                        }
+                    }
 
                     &:hover {
                         cursor: pointer;
                         background: #7873f1;
                     }
                 }
+            }
+
+
+            .lp_btn_box {
+                width: 100%;
+                height: 50px;
+                display: flex;
+                margin-top: 10px;
+                align-items: center;
+                justify-content: space-around;
             }
         }
 

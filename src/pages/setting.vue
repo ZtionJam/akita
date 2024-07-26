@@ -13,7 +13,7 @@
             <p>消息通知:</p>
             <div class="radio">
                 <input type="radio" :value="true" name="notify" title="开启后，收到新消息将推送系统消息"
-                    v-model="data.notify"><span>开启</span>
+                       v-model="data.notify"><span>开启</span>
                 <input checked :value="false" type="radio" name="notify" v-model="data.notify"><span>关闭</span>
             </div>
         </div>
@@ -23,11 +23,11 @@
     </div>
 </template>
 <script setup>
-import { onMounted, ref } from 'vue';
+import {onMounted, ref} from 'vue';
 import Notice from '@/components/js/notice.js';
-import { invoke } from '@tauri-apps/api/tauri'
-import { tauri } from '@tauri-apps/api';
-import { emit, listen } from '@tauri-apps/api/event'
+import {invoke} from '@tauri-apps/api/tauri'
+import {tauri} from '@tauri-apps/api';
+import {emit, listen} from '@tauri-apps/api/event'
 
 let data = ref({
     host: "http://msgs.ztion.cn/msg/listen",
@@ -51,10 +51,10 @@ const save = () => {
     localStorage.setItem("server", JSON.stringify(data.value));
     Notice("✔保存成功")
 
-    invoke("connect", { server: { ...data.value } })
+    invoke("connect", {server: {...data.value}})
 }
 listen("notify", e => {
-  Notice(e.payload.message);
+    Notice(e.payload.message);
 });
 </script>
 <style scoped lang="scss">
@@ -78,7 +78,7 @@ listen("notify", e => {
         }
 
 
-        >p {
+        > p {
             display: inline-block;
             width: 100px;
             font-size: 16px;
@@ -86,7 +86,7 @@ listen("notify", e => {
             user-select: none;
         }
 
-        >input[type='text'] {
+        > input[type='text'] {
             width: 250px;
             height: 65%;
             border: 1px solid #ccc;
@@ -110,7 +110,7 @@ listen("notify", e => {
             justify-content: center;
             align-items: center;
 
-            >input {
+            > input {
                 margin-left: 10px;
 
                 &:checked {
@@ -119,7 +119,7 @@ listen("notify", e => {
                 }
             }
 
-            >span {
+            > span {
                 margin-left: 5px;
                 font-size: 14px;
             }
