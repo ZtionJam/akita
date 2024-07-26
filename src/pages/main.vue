@@ -45,10 +45,10 @@
                 </a-select>
                 <div class="menu_name">记录</div>
                 <div class="record_box">
-                    <div v-for="record in data.recordList" :class="{choose:data.nowRecordId===record.id}"
+                    <div v-for="(record,index) in data.recordList" :class="{choose:data.nowRecordId===record.id}"
                          @click="load_record(record)">
                         <div>{{ record.title }}</div>
-                        <div><img src="@/assets/icon/close.png" alt/></div>
+                        <div class="close_icon"><img src="@/assets/icon/close.png" @click="delRecord(index)" alt/></div>
 
                     </div>
                 </div>
@@ -113,6 +113,12 @@ onMounted(() => {
 });
 const updateState = () => {
     localStorage.setItem("state", JSON.stringify(data.value));
+}
+const delRecord = (index) => {
+    let record = data.value.recordList[index];
+    localStorage.removeItem("record:" + record.id);
+    data.value.recordList.splice(index, 1);
+    updateState();
 }
 const toggleAdd = (state) => {
     data.value.addChat = state
@@ -284,8 +290,12 @@ const toBottom = () => {
                     border-radius: 5px;
                     display: flex;
 
-                    &:hover img {
+                    &:hover .close_icon {
                         visibility: visible;
+                    }
+
+                    .close_icon {
+                        visibility: hidden;
                     }
 
                     > div:nth-child(1) {
@@ -304,7 +314,6 @@ const toBottom = () => {
 
                         img {
                             width: 20px;
-                            visibility: hidden;
                         }
                     }
 
