@@ -1,6 +1,12 @@
+
+
+use std::path::Path;
+use std::{path, fs};
+
+use tauri::api::path::{config_dir};
 use tauri::{AppHandle, Manager};
 
-use crate::domain::{MessageChunk, MessageReq};
+use crate::domain::{AppConfig, MessageChunk, MessageReq};
 use crate::qwen::{QwenChunk, QwenInput, QwenMessage, QwenParameters, QwenReq};
 
 pub fn resolve_qwen_sse_chunk(str: &String) -> Option<QwenChunk> {
@@ -36,4 +42,30 @@ pub fn gen_qwen_req_from_front_req(req: &MessageReq) -> QwenReq {
 
 pub fn send_msg_chunk(chunk: MessageChunk, app: &AppHandle) {
     let _ = app.emit_all("msg_chunk", chunk);
+}
+
+fn set_config(config: &AppConfig){
+    let config_dir =config_dir().unwrap();
+    let config_path = config_dir.join("config.json");
+
+    let json_string = serde_json::to_string_pretty(config).unwrap();
+    fs::write(&config_path, json_string).unwrap();
+}
+
+
+fn get_config() -> Result<AppConfig, ()> {
+    let config_dir = config_dir().unwrap();
+    let config_path = config_dir.join("config.json");
+
+    if !Path::new(&config_path).exists() {
+        let default_config = AppConfig {
+            api_key:"".to_string()
+        };
+        set_config(&default_config);
+    }
+
+    let json_string = fs::read_to_string(config_path).unwrap();
+    let config: AppConfig = serde_json::from_str(&json_string).unwrap();
+
+    Ok(config)
 }

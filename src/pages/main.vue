@@ -4,7 +4,7 @@
         <div class="msg_area" id="msg_area">
             <div v-for="msg in data.msgList" :class="msg.role==='user'?'msg_card user_msg':'msg_card'">
                 <div class="userinfo">
-                    <a-avatar :size="60" :src="msg.avatar"/>
+                    <a-avatar :size="60" :src="msg.avatar" :title="msg.role"/>
                 </div>
                 <div class="msg_content">
                     <v-md-preview :text="msg.content"></v-md-preview>
@@ -46,15 +46,15 @@
                 <div class="menu_name">记录</div>
                 <div class="record_box">
                     <div v-for="(record,index) in data.recordList" :class="{choose:data.nowRecordId===record.id}"
-                         @click="load_record(record)">
-                        <div>{{ record.title }}</div>
+                    >
+                        <div @click="load_record(record)">{{ record.title }}</div>
                         <div class="close_icon"><img src="@/assets/icon/close.png" @click="delRecord(index)" alt/></div>
 
                     </div>
                 </div>
                 <div class="lp_btn_box">
                     <a-button type="primary" @click="toggleAdd(true)" size="middle">新增会话</a-button>
-                    <a-button type="primary" size="middle">更多设置</a-button>
+                    <a-button type="primary" @click="openSetting" size="middle">更多设置</a-button>
                 </div>
             </div>
             <div class="lp_arrow">👉</div>
@@ -116,12 +116,19 @@ const updateState = () => {
 }
 const delRecord = (index) => {
     let record = data.value.recordList[index];
+    if (data.value.recordList.length === 1) {
+        message.warn('至少保留一个会话哦', 1);
+        return;
+    }
     localStorage.removeItem("record:" + record.id);
     data.value.recordList.splice(index, 1);
     updateState();
 }
 const toggleAdd = (state) => {
     data.value.addChat = state
+}
+const openSetting = () => {
+    invoke("setting")
 }
 const saveNewChat = (chat) => {
     console.log(data.value)
@@ -133,6 +140,14 @@ const saveNewChat = (chat) => {
     data.value.recordList.push(record)
     load_record(record);
     data.value.addChat = false;
+    if (chat.prompt) {
+        data.value.msgList.unshift({
+            id: 999,
+            role: "system",
+            avatar: "https://res.ztion.cn/imgs/cat.png",
+            content: chat.prompt,
+        });
+    }
 
     updateState();
 }
@@ -226,7 +241,7 @@ const toBottom = () => {
         height: 450px;
         position: fixed;
         top: 8%;
-        //left: -220px;
+        left: -220px;
         z-index: 100;
         transition: all 200ms ease-in;
         display: flex;

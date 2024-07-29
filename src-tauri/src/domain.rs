@@ -22,3 +22,9 @@ pub struct MessageChunk {
     pub chunk_content: String,
     pub msg_id: u64,
 }
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AppConfig {
+    pub api_key: String,
+}

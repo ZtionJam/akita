@@ -4,6 +4,12 @@ use std::time::Duration;
 
 use reqwest::Client;
 use tauri::AppHandle;
+use tauri::Manager;
+use window_shadows::set_shadow;
+use tauri::WindowBuilder;
+use tauri::WindowUrl;
+
+
 
 use crate::domain::MessageChunk;
 use crate::domain::MessageReq;
@@ -55,4 +61,31 @@ pub async fn send_ques(req: MessageReq, app: AppHandle) {
             }
         }
     }
+}
+
+#[tauri::command]
+pub async fn setting(handle: AppHandle) {
+    //config
+    let mut config = handle.config().tauri.windows.get(0).unwrap().clone();
+    config.label = "setting".to_string();
+    config.title = "设置".to_string();
+    config.height = 350.0;
+    config.width = 400.0;
+    config.center = false;
+    config.url = WindowUrl::App("/#/setting".parse().unwrap());
+
+    let setting_window = match WindowBuilder::from_config(&handle, config).build() {
+        Ok(w) => w,
+        Err(e) => {
+            if e.to_string().contains("exists") {
+                if let Some(win) = handle.get_window("setting") {
+                    let _ = win.set_focus();
+                    return;
+                }
+            }
+            panic!("open setting err")
+        }
+    };
+    #[cfg(any(windows, target_os = "macos"))]
+    set_shadow(&setting_window, true).unwrap();
 }
