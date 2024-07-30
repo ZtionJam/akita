@@ -44,24 +44,26 @@ pub fn send_msg_chunk(chunk: MessageChunk, app: &AppHandle) {
     let _ = app.emit_all("msg_chunk", chunk);
 }
 
-fn set_config(config: &AppConfig){
+pub fn set_config(config: &AppConfig){
     let config_dir =config_dir().unwrap();
-    let config_path = config_dir.join("config.json");
+    let config_path = config_dir.join("akita_config.json");
 
     let json_string = serde_json::to_string_pretty(config).unwrap();
     fs::write(&config_path, json_string).unwrap();
 }
 
 
-fn get_config() -> Result<AppConfig, ()> {
+pub fn get_config() -> Result<AppConfig, ()> {
     let config_dir = config_dir().unwrap();
-    let config_path = config_dir.join("config.json");
+    let config_path = config_dir.join("akita_config.json");
 
     if !Path::new(&config_path).exists() {
         let default_config = AppConfig {
-            api_key:"".to_string()
+            api_key:"xxxxxxx".to_string()
         };
         set_config(&default_config);
+        println!("create config:{:?}",config_path);
+        return Ok(default_config);
     }
 
     let json_string = fs::read_to_string(config_path).unwrap();

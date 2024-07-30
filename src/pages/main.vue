@@ -15,9 +15,11 @@
 
         <div class="input_area">
 
-            <a-button :disabled="data.sending" class="circle_btn" type="primary" shape="circle" size="large">
+            <a-button :disabled="data.sending" title="清除本会话" @click="clearChat" class="circle_btn" type="primary"
+                      shape="circle"
+                      size="large">
                 <template #icon>
-                    <UploadOutlined/>
+                    <DeleteOutlined/>
                 </template>
             </a-button>
 
@@ -28,7 +30,8 @@
                         :auto-size="{ minRows: 2, maxRows: 5 }"/>
 
 
-            <a-button @click="sendMsg" :disabled="data.sending" class="circle_btn" type="primary" shape="circle"
+            <a-button @click="sendMsg" title="发送" :disabled="data.sending" class="circle_btn" type="primary"
+                      shape="circle"
                       size="large">
                 <template #icon>
                     <SendOutlined/>
@@ -63,12 +66,13 @@
     </div>
 </template>
 <script setup>
-import {nextTick, onMounted, ref} from 'vue';
-import {SendOutlined, UploadOutlined} from '@ant-design/icons-vue';
+import {nextTick, onMounted, ref, createVNode, watch} from 'vue';
+import {SendOutlined, DeleteOutlined, ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import {invoke} from "@tauri-apps/api/tauri";
 import {listen} from "@tauri-apps/api/event";
 import {message} from 'ant-design-vue';
 import AddChat from "../components/addChat.vue";
+import {Modal} from 'ant-design-vue';
 
 let data = ref({
     sending: false,
@@ -98,6 +102,18 @@ let data = ref({
     nowModelName: 'qwen2-1.5b-instruct',
     addChat: false
 });
+//监听页面数据变化，逻辑简单，不考虑性能
+watch(data, (newVal, oldVal) => {
+    //保存状态
+    updateState()
+    //nowRecordId改变时，切换列表
+    message.warn(newVal.nowRecordId, 1);
+    message.warn(oldVal.nowRecordId, 1);
+    if(newVal.nowRecordId!==oldVal.nowRecordId){
+        message.warn(newVal.nowRecordId, 1);
+    }
+}, {deep: true});
+
 onMounted(() => {
     //加载会话
     localStorage.setItem("time", new Date().getTime().toString());
@@ -107,12 +123,26 @@ onMounted(() => {
     } else {
         data.value = JSON.parse(state);
     }
-
-
     toBottom();
 });
 const updateState = () => {
     localStorage.setItem("state", JSON.stringify(data.value));
+}
+
+const clearChat = () => {
+
+    Modal.confirm({
+        title: '确认',
+        icon: createVNode(ExclamationCircleOutlined),
+        content: '确认清除本会话的消息记录吗',
+        okText: '确认',
+        cancelText: '取消',
+        onOk: () => {
+            data.value.msgList = []
+            localStorage.removeItem("record:" + data.value.nowRecordId);
+        }
+    });
+
 }
 const delRecord = (index) => {
     let record = data.value.recordList[index];
@@ -122,7 +152,6 @@ const delRecord = (index) => {
     }
     localStorage.removeItem("record:" + record.id);
     data.value.recordList.splice(index, 1);
-    updateState();
 }
 const toggleAdd = (state) => {
     data.value.addChat = state
@@ -148,8 +177,6 @@ const saveNewChat = (chat) => {
             content: chat.prompt,
         });
     }
-
-    updateState();
 }
 const sendMsg = () => {
     const ques_id = new Date().getTime();
@@ -205,8 +232,10 @@ listen("msg_chunk", e => {
     merge_msg_chunk(msg.msg_id, msg.chunk_content);
     if (msg.over) {
         localStorage.setItem("record:" + data.value.nowRecordId, JSON.stringify(data.value.msgList));
-        updateState()
     }
+});
+listen("clear_data", e => {
+    window.location.reload();
 });
 
 const merge_msg_chunk = (msg_id, content) => {

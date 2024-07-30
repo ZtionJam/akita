@@ -5,12 +5,11 @@ use std::time::Duration;
 use reqwest::Client;
 use tauri::AppHandle;
 use tauri::Manager;
-use window_shadows::set_shadow;
 use tauri::WindowBuilder;
 use tauri::WindowUrl;
+use window_shadows::set_shadow;
 
-
-
+use crate::domain::AppConfig;
 use crate::domain::MessageChunk;
 use crate::domain::MessageReq;
 use crate::utils;
@@ -22,6 +21,8 @@ pub async fn send_ques(req: MessageReq, app: AppHandle) {
     let url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
     let qwen_req = gen_qwen_req_from_front_req(&req);
 
+    let app_config = utils::get_config().unwrap();
+
     let client = Client::builder()
         .timeout(Duration::from_secs(3000))
         .build()
@@ -30,10 +31,7 @@ pub async fn send_ques(req: MessageReq, app: AppHandle) {
     let mut response = match client
         .post(url)
         .body(qwen_req)
-        .header(
-            "Authorization",
-            "Bearer sk-69491a35e6e64f8f8dbaf913b26e62e3",
-        )
+        .header("Authorization", app_config.api_key)
         .header("Content-Type", "application/json")
         .header("X-DashScope-SSE", "enable")
         .send()
@@ -58,6 +56,15 @@ pub async fn send_ques(req: MessageReq, app: AppHandle) {
                     msg_id: req.ans_id,
                 };
                 utils::send_msg_chunk(msg_chunk, &app);
+            } else {
+                utils::send_msg_chunk(
+                    MessageChunk {
+                        over: true,
+                        chunk_content: "请求失败，请检查ApiKey配置或网络情况".to_string(),
+                        msg_id: req.ans_id,
+                    },
+                    &app,
+                );
             }
         }
     }
@@ -88,4 +95,14 @@ pub async fn setting(handle: AppHandle) {
     };
     #[cfg(any(windows, target_os = "macos"))]
     set_shadow(&setting_window, true).unwrap();
+}
+
+#[tauri::command]
+pub fn get_config() -> Result<AppConfig, ()> {
+    utils::get_config()
+}
+
+#[tauri::command]
+pub fn set_config(config: AppConfig) {
+    utils::set_config(&config);
 }
