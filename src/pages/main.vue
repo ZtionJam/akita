@@ -60,7 +60,7 @@
                     <a-button type="primary" @click="openSetting" size="middle">更多设置</a-button>
                 </div>
             </div>
-            <div class="lp_arrow">👉</div>
+            <div class="lp_arrow"><img src="@/assets/icon/right.png"></div>
         </div>
         <addChat v-if="data.addChat" @save="saveNewChat" @toggle="toggleAdd"/>
     </div>
@@ -107,8 +107,6 @@ watch(data, (newVal, oldVal) => {
     //保存状态
     updateState()
     //nowRecordId改变时，切换列表
-    message.warn(newVal.nowRecordId, 1);
-    message.warn(oldVal.nowRecordId, 1);
     if(newVal.nowRecordId!==oldVal.nowRecordId){
         message.warn(newVal.nowRecordId, 1);
     }
@@ -391,6 +389,10 @@ const toBottom = () => {
             align-items: center;
             background: rgba(255, 255, 244, 1);
             opacity: 0.8;
+
+            img{
+                width: 30px;
+            }
         }
     }
 
