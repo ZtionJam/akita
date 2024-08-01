@@ -72,6 +72,9 @@ import {listen} from "@tauri-apps/api/event";
 import {message} from 'ant-design-vue';
 import AddChat from "../components/addChat.vue";
 import {Modal} from 'ant-design-vue';
+import systemImg from '@/assets/icon/system.png';
+import aiImg from '@/assets/icon/ai.png'
+import userImg from '@/assets/icon/user.png'
 
 //数据
 let data = ref({
@@ -165,6 +168,10 @@ const clearChat = () => {
 //删除指定索引的会话
 const delRecord = (index) => {
     let record = data.value.recordList[index];
+    if (activeRecordId.value===record.id) {
+        message.warn('不能删除当前会话', 1);
+        return;
+    }
     if (data.value.recordList.length === 1) {
         message.warn('至少保留一个会话哦', 1);
         return;
@@ -201,7 +208,7 @@ const saveNewChat = (chat) => {
         let prompt = {
             id: 999,
             role: "system",
-            avatar: "https://res.ztion.cn/imgs/cat.png",
+            avatar: systemImg,
             content: chat.prompt,
         };
         data.value.msgList.unshift(prompt);
@@ -219,7 +226,7 @@ const sendMsg = () => {
     data.value.msgList.push({
         id: ques_id,
         role: "user",
-        avatar: "https://res.ztion.cn/imgs/cat.png",
+        avatar: userImg,
         content: ques_content,
     });
     //答案
@@ -227,7 +234,7 @@ const sendMsg = () => {
     data.value.msgList.push({
         id: ans_id,
         role: "assistant",
-        avatar: "https://res.ztion.cn/imgs/cat.png",
+        avatar: aiImg,
         content: "",
     });
     //调用后台

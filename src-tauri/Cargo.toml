@@ -1,8 +1,8 @@
 [package]
 name = "akita"
 version = "0.0.1"
-description = "A Tauri App"
-authors = ["you"]
+description = "this is akita"
+authors = ["ZtionJam"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
