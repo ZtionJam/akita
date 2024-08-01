@@ -48,9 +48,8 @@
                 </a-select>
                 <div class="menu_name">记录</div>
                 <div class="record_box">
-                    <div v-for="(record,index) in data.recordList" :class="{choose:data.nowRecordId===record.id}"
-                    >
-                        <div @click="load_record(record)">{{ record.title }}</div>
+                    <div v-for="(record,index) in data.recordList" :class="{choose:activeRecordId===record.id}">
+                        <div @click="openRecord(record)">{{ record.title }}</div>
                         <div class="close_icon"><img src="@/assets/icon/close.png" @click="delRecord(index)" alt/></div>
 
                     </div>
@@ -74,6 +73,7 @@ import {message} from 'ant-design-vue';
 import AddChat from "../components/addChat.vue";
 import {Modal} from 'ant-design-vue';
 
+//数据
 let data = ref({
     sending: false,
     msgList: [],
@@ -98,37 +98,57 @@ let data = ref({
         }
     ],
     inputText: "",
-    nowRecordId: '1',
     nowModelName: 'qwen2-1.5b-instruct',
     addChat: false
 });
-//监听页面数据变化，逻辑简单，不考虑性能
+
+//当前会话id
+let activeRecordId = ref("1");
+//监听页面数据变化
 watch(data, (newVal, oldVal) => {
     //保存状态
-    updateState()
-    //nowRecordId改变时，切换列表
-    if(newVal.nowRecordId!==oldVal.nowRecordId){
-        message.warn(newVal.nowRecordId, 1);
-    }
+    localStorage.setItem("state", JSON.stringify(data.value));
+    //滚动到底
+    toBottom();
 }, {deep: true});
 
+//会话监听，
+watch(activeRecordId, (newRecordId, oldVal) => {
+    if (newRecordId !== oldVal) {
+        let msgRecord = localStorage.getItem("record:" + newRecordId);
+        if (msgRecord != null) {
+            let msgList = JSON.parse(msgRecord);
+            if (msgList.length > 0) {
+                data.value.msgList = msgList;
+            }
+        } else {
+            data.value.msgList = []
+        }
+        toBottom();
+        message.success('已成功加载历史消息', 1);
+    }
+
+});
+
+//挂载时初始化会话
 onMounted(() => {
     //加载会话
     localStorage.setItem("time", new Date().getTime().toString());
     let state = localStorage.getItem("state");
     if (state == null) {
-        updateState()
+        localStorage.setItem("state", JSON.stringify(data.value));
     } else {
         data.value = JSON.parse(state);
     }
-    toBottom();
 });
-const updateState = () => {
-    localStorage.setItem("state", JSON.stringify(data.value));
+
+//切换到指定的会话
+const openRecord = (record) => {
+    activeRecordId.value = record.id
 }
 
+//清空当前会话消息记录
 const clearChat = () => {
-
     Modal.confirm({
         title: '确认',
         icon: createVNode(ExclamationCircleOutlined),
@@ -137,11 +157,12 @@ const clearChat = () => {
         cancelText: '取消',
         onOk: () => {
             data.value.msgList = []
-            localStorage.removeItem("record:" + data.value.nowRecordId);
+            localStorage.removeItem("record:" + activeRecordId.value);
         }
     });
-
 }
+
+//删除指定索引的会话
 const delRecord = (index) => {
     let record = data.value.recordList[index];
     if (data.value.recordList.length === 1) {
@@ -151,32 +172,48 @@ const delRecord = (index) => {
     localStorage.removeItem("record:" + record.id);
     data.value.recordList.splice(index, 1);
 }
+
+//切换新增会话窗口的展示
 const toggleAdd = (state) => {
     data.value.addChat = state
 }
+
+//打开设置窗口
 const openSetting = () => {
     invoke("setting")
 }
+
+
+//保存新的会话
 const saveNewChat = (chat) => {
-    console.log(data.value)
     let record = {
         id: new Date().getTime(),
         title: chat.name,
         prompt: chat.prompt
     };
     data.value.recordList.push(record)
-    load_record(record);
-    data.value.addChat = false;
+
+    toggleAdd(false);
+
+    data.value.msgList = []
+    //有prompt时添加prompt
     if (chat.prompt) {
-        data.value.msgList.unshift({
+        let prompt = {
             id: 999,
             role: "system",
             avatar: "https://res.ztion.cn/imgs/cat.png",
             content: chat.prompt,
-        });
+        };
+        data.value.msgList.unshift(prompt);
+        localStorage.setItem("record:" + record.id, JSON.stringify(data.value.msgList));
     }
+    activeRecordId.value = record.id;
 }
+
+
+//发送消息
 const sendMsg = () => {
+    //问题
     const ques_id = new Date().getTime();
     let ques_content = data.value.inputText;
     data.value.msgList.push({
@@ -185,7 +222,15 @@ const sendMsg = () => {
         avatar: "https://res.ztion.cn/imgs/cat.png",
         content: ques_content,
     });
-
+    //答案
+    const ans_id = ques_id + 1;
+    data.value.msgList.push({
+        id: ans_id,
+        role: "assistant",
+        avatar: "https://res.ztion.cn/imgs/cat.png",
+        content: "",
+    });
+    //调用后台
     invoke("send_ques", {
         req: {
             ans_id: ques_id + 1,
@@ -193,49 +238,33 @@ const sendMsg = () => {
             msg_history: data.value.msgList
         }
     })
-
-    data.value.msgList.push({
-        id: ques_id + 1,
-        role: "assistant",
-        avatar: "https://res.ztion.cn/imgs/cat.png",
-        content: "",
-    });
     data.value.inputText = "";
-    toBottom();
 }
 
-const load_record = (record) => {
-    data.value.nowRecordId = record.id
-    let msgRecord = localStorage.getItem("record:" + record.id);
-    if (msgRecord != null) {
-        let msgList = JSON.parse(msgRecord);
-        if (msgList.length > 0) {
-            data.value.msgList = msgList;
-        }
-    } else {
-        data.value.msgList = []
-    }
-    toBottom();
-    message.success('已成功加载历史消息', 1);
-}
-
+//Shift+Enter快速发送
 const quickSend = e => {
     if (e.shiftKey === true && e.key === "Enter") {
         sendMsg();
     }
 };
 
+
+//监听消息回应
 listen("msg_chunk", e => {
     let msg = e.payload;
     merge_msg_chunk(msg.msg_id, msg.chunk_content);
     if (msg.over) {
-        localStorage.setItem("record:" + data.value.nowRecordId, JSON.stringify(data.value.msgList));
+        localStorage.setItem("record:" + activeRecordId.value, JSON.stringify(data.value.msgList));
     }
 });
+
+//监听清楚数据事件
 listen("clear_data", e => {
     window.location.reload();
 });
 
+
+// 合并消息片段
 const merge_msg_chunk = (msg_id, content) => {
     data.value.msgList.forEach(msg => {
         if (msg.id === msg_id) {
@@ -245,10 +274,13 @@ const merge_msg_chunk = (msg_id, content) => {
     })
 }
 
+
+//切换加载中
 const toggleDis = (state) => {
     data.value.sending = state;
 }
 
+//滚动到底
 const toBottom = () => {
     nextTick(() => {
         window.scrollTo(0, document.documentElement.scrollHeight);
@@ -345,6 +377,9 @@ const toBottom = () => {
                         height: 40px;
                         line-height: 40px;
                         text-indent: 20px;
+                        white-space: nowrap;
+                        overflow: hidden;
+
                     }
 
                     > div:nth-child(2) {

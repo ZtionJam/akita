@@ -21,7 +21,7 @@ let data = ref({
 const save = () => {
     emit("save", {
         name: data.value.name,
-        prompt: data.value.name
+        prompt: data.value.prompt
     })
 }
 const close = (e) => {
