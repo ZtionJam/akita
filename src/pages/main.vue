@@ -96,12 +96,20 @@ let data = ref({
             modelName: "qwen2-1.5b-instruct"
         },
         {
+            name: "千问2 57B",
+            modelName: "qwen2-57b-a14b-instruct"
+        },
+        {
             name: "千问2 72B",
             modelName: "qwen2-72b-instruct"
+        },
+        {
+            name: "千问1.5 110B",
+            modelName: "qwen1.5-110b-chat"
         }
     ],
     inputText: "",
-    nowModelName: 'qwen2-1.5b-instruct',
+    nowModelName: 'qwen2-72b-instruct',
     addChat: false
 });
 
@@ -168,7 +176,7 @@ const clearChat = () => {
 //删除指定索引的会话
 const delRecord = (index) => {
     let record = data.value.recordList[index];
-    if (activeRecordId.value===record.id) {
+    if (activeRecordId.value === record.id) {
         message.warn('不能删除当前会话', 1);
         return;
     }
@@ -432,7 +440,7 @@ const toBottom = () => {
             background: rgba(255, 255, 244, 1);
             opacity: 0.8;
 
-            img{
+            img {
                 width: 30px;
             }
         }

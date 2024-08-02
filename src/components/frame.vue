@@ -17,7 +17,7 @@
 import { appWindow } from "@tauri-apps/api/window";
 import { ref,onMounted } from "vue";
 
-let title = ref("焦距")
+let title = ref("柴特千问")
 onMounted(() => {
     setTimeout(() => {
         title.value = document.title

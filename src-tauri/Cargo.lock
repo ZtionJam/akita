@@ -28,7 +28,7 @@ dependencies = [
 
 [[package]]
 name = "akita"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "lazy_static",
  "reqwest 0.12.5",

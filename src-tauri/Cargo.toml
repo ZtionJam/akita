@@ -1,6 +1,6 @@
 [package]
 name = "akita"
-version = "0.0.1"
+version = "0.0.2"
 description = "this is akita"
 authors = ["ZtionJam"]
 edition = "2021"
