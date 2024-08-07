@@ -1,9 +1,9 @@
 
 
 use std::path::Path;
-use std::{path, fs};
+use std::fs;
 
-use tauri::api::path::{config_dir};
+use tauri::api::path::config_dir;
 use tauri::{AppHandle, Manager};
 
 use crate::domain::{AppConfig, MessageChunk, MessageReq};

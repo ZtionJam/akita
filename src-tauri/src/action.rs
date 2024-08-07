@@ -44,14 +44,16 @@ pub async fn send_ques(req: MessageReq, app: AppHandle) {
     };
 
     while let Ok(chunk) = response.chunk().await {
+        let mut finish = true;
         if let Some(data) = chunk {
             let str = &String::from_utf8_lossy(&data)
                 .to_string()
                 .trim()
                 .to_string();
             if let Some(qwen_chunk) = utils::resolve_qwen_sse_chunk(str) {
+                finish = qwen_chunk.output.finish_reason.eq("stop");
                 let msg_chunk = MessageChunk {
-                    over: qwen_chunk.output.finish_reason.eq("stop"),
+                    over: finish,
                     chunk_content: qwen_chunk.output.text,
                     msg_id: req.ans_id,
                 };
@@ -67,6 +69,9 @@ pub async fn send_ques(req: MessageReq, app: AppHandle) {
                 );
             }
         }
+        if finish {
+            break;
+        };
     }
 }
 
